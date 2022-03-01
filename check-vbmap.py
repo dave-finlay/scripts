@@ -84,14 +84,14 @@ def get_server_group_size_permutations(
         max_server_group_size: int,
         suppress_duplicates: bool = False) -> List[List[int]]:
     if server_group_count == 1:
-        return [[x] for x in range(min_server_group_size, max_server_group_size)]
+        return [[x] for x in range(min_server_group_size, max_server_group_size + 1)]
     partial: List[List[int]] = get_server_group_size_permutations(server_group_count - 1,
                                                                   min_server_group_size,
                                                                   max_server_group_size,
                                                                   suppress_duplicates)
     result = []
     already = {}
-    for i in range(min_server_group_size, max_server_group_size):
+    for i in range(min_server_group_size, max_server_group_size + 1):
         for p in partial:
             to_append = p + [i]
             is_dupe = False
