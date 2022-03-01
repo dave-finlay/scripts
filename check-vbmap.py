@@ -37,10 +37,10 @@ class VbmapException(Exception):
 
     def __str__(self):
         return f'{super().__str__()}: ' \
-               f'groups: {len(self.server_groups())} ' \
-               f'nodes: {self.num_nodes()} ' \
-               f'reps: {self.numReplicas} ' \
-               f'node tags: {self.get_node_tag_list()}, ' \
+               f'groups:{len(self.server_groups())} ' \
+               f'nodes:{self.num_nodes()} ' \
+               f'reps:{self.numReplicas} ' \
+               f'node-tags:{self.get_node_tag_list()}, ' \
                f'{self.description}'
 
 
@@ -255,7 +255,7 @@ class ReplicaChecker(VbmapChecker):
 
 def print_checker_result(server_groups, num_replicas, vbmap_exception, verbose):
     if verbose:
-        print('groups: {}, replicas: {} - {} {}'.format(
+        print('groups:{}, replicas: {} - {} {}'.format(
             server_groups,
             num_replicas,
             'not ok' if vbmap_exception else 'ok',
