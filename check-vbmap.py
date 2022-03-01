@@ -80,16 +80,18 @@ def create_balanced_node_tag_map(server_group_count, server_group_size) -> Dict[
 
 def get_server_group_size_permutations(
         server_group_count: int,
+        min_server_group_size: int,
         max_server_group_size: int,
         suppress_duplicates: bool = False) -> List[List[int]]:
     if server_group_count == 1:
-        return [[x] for x in range(1, max_server_group_size)]
+        return [[x] for x in range(min_server_group_size, max_server_group_size)]
     partial: List[List[int]] = get_server_group_size_permutations(server_group_count - 1,
+                                                                  min_server_group_size,
                                                                   max_server_group_size,
                                                                   suppress_duplicates)
     result = []
     already = {}
-    for i in range(1, max_server_group_size):
+    for i in range(min_server_group_size, max_server_group_size):
         for p in partial:
             to_append = p + [i]
             is_dupe = False
@@ -264,10 +266,12 @@ def print_checker_result(server_groups, num_replicas, vbmap_exception, verbose):
 
 def check(vbmap_path: str,
           server_group_count: int,
+          min_server_group_size: int,
           max_server_group_size: int,
           checkers: List[VbmapChecker],
           verbose: bool = False):
     server_groups_list = get_server_group_size_permutations(server_group_count,
+                                                            min_server_group_size,
                                                             max_server_group_size,
                                                             suppress_duplicates=True)
     exceptions = []
@@ -303,6 +307,7 @@ def main(args):
                 ReplicaChecker()]
     exceptions = check(vbmap,
                        args.server_group_count,
+                       args.min_group_size,
                        args.max_group_size,
                        checkers,
                        verbose=args.verbose)
@@ -316,6 +321,8 @@ parser.add_argument('--server-groups', dest='server_group_count', type=int, defa
                     help='number of server groups')
 parser.add_argument('--max-group-size', dest='max_group_size', type=int, default=5,
                     help='max server group size')
+parser.add_argument('--min-group-size', dest='min_group_size', type=int, default=1,
+                    help='min server group size')
 parser.add_argument('--verbose', dest='verbose', default=False, action='store_true',
                     help='emit verbose log information')
 
