@@ -3,10 +3,11 @@
 import json
 import subprocess
 import argparse
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
 def format_tags(node_tag_map):
+    result = ''
     result = ''
     for n in node_tag_map.keys():
         if result:
@@ -253,13 +254,19 @@ class ReplicaChecker(VbmapChecker):
                                  f'should be: {1024 * num_replicas}, are: {replicas}')
 
 
-def print_checker_result(server_groups, num_replicas, vbmap_exception, verbose):
+def print_checker_result(
+        server_groups: List[int],
+        num_replicas: int,
+        vbmap_exception: VbmapException,
+        checker: Optional[VbmapChecker],
+        verbose: bool):
     if verbose:
-        print('groups:{}, replicas: {} - {} {}'.format(
+        print('groups:{}, replicas: {} - {} {}{}'.format(
             server_groups,
             num_replicas,
             'not ok' if vbmap_exception else 'ok',
-            vbmap_exception if vbmap_exception else ''))
+            vbmap_exception if vbmap_exception else '',
+            type(checker).__name__ if checker else ''))
     else:
         print('x' if vbmap_exception else '.', end='', flush=True)
 
@@ -288,11 +295,15 @@ def check(vbmap_path: str,
                     except VbmapException as e:
                         vee = e
                         exceptions.append(e)
-                    print_checker_result(server_groups, num_replicas, vee, verbose)
+                    print_checker_result(server_groups,
+                                         num_replicas,
+                                         vee,
+                                         checker,
+                                         verbose)
             except VbmapException as e:
                 ve = e
                 exceptions.append(ve)
-            print_checker_result(server_groups, num_replicas, ve, verbose)
+            print_checker_result(server_groups, num_replicas, ve, None, verbose)
     if not verbose:
         print()
     return exceptions
