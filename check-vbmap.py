@@ -3,7 +3,7 @@
 import json
 import subprocess
 import argparse
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Callable
 
 TagId = int
 NodeId = int
@@ -118,11 +118,12 @@ def get_server_group_size_permutations(
     return result
 
 
+def fold(map: Dict[Any, int], key: Any, folder: Callable[[Any], Any]) -> None:
+    map[key] = folder(map.get(key))
+
+
 def increment(map: Dict[Any, int], key: Any, value: int) -> None:
-    if not map.get(key):
-        map[key] = value
-    else:
-        map[key] += value
+    fold(map, key, lambda x: value + (x if x else 0))
 
 
 class VbmapChecker:
@@ -200,16 +201,10 @@ class ReplicaBalanceChecker(VbmapChecker):
         size: TagSize
         for node in counts:
             size = tag_sizes[node_tag_map[node]]
-            current = max_replicas.get(size)
-            if current:
-                max_replicas[size] = max(counts[node], current)
-            else:
-                max_replicas[size] = counts[node]
-            current = min_replicas.get(size)
-            if current:
-                min_replicas[size] = min(counts[node], current)
-            else:
-                min_replicas[size] = counts[node]
+            fold(max_replicas, size,
+                 lambda x: max(counts[node], x) if x else counts[node])
+            fold(min_replicas, size,
+                 lambda x: min(counts[node], x) if x else counts[node])
         for size in max_replicas:
             max_count = max_replicas[size]
             min_count = min_replicas[size]
