@@ -8,7 +8,6 @@ from typing import Dict, List, Any, Optional
 
 def format_tags(node_tag_map):
     result = ''
-    result = ''
     for n in node_tag_map.keys():
         if result:
             result += ','
