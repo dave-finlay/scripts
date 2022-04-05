@@ -129,7 +129,7 @@ def increment(map: Dict[Any, int], key: Any, value: int) -> None:
 class VbmapChecker:
 
     def check(self,
-              chains: List[List[int]],
+              chains: List[List[NodeId]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         pass
@@ -138,15 +138,15 @@ class VbmapChecker:
 class RackZoneChecker(VbmapChecker):
 
     def check(self,
-              chains: List[List[int]],
+              chains: List[List[NodeId]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         tags = {t: None for t in node_tag_map.values()}
-        for c in chains:
-            active_node = c[0]
+        for chain in chains:
+            active_node = chain[0]
             active_tag = node_tag_map[active_node]
             replica_tags = {}
-            for r in c[1:]:
+            for r in chain[1:]:
                 replica_tag = node_tag_map[r]
                 if replica_tag == active_tag:
                     raise VbmapException('not rack aware',
@@ -159,7 +159,7 @@ class RackZoneChecker(VbmapChecker):
                 raise VbmapException('available server groups not maximally used',
                                      node_tag_map,
                                      num_replicas,
-                                     f'chain: {c} '
+                                     f'chain: {chain} '
                                      f'used groups: {sorted(replica_tags.keys())} '
                                      f'avail groups: {sorted(set(tags) - {active_tag})}')
 
@@ -167,12 +167,12 @@ class RackZoneChecker(VbmapChecker):
 class ActiveBalanceChecker(VbmapChecker):
 
     def check(self,
-              chains: List[List[int]],
+              chains: List[List[NodeId]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         counts: Dict[int, int] = {}
-        for c in chains:
-            increment(counts, c[0], 1)
+        for chain in chains:
+            increment(counts, chain[0], 1)
         max_active = max(counts, key=counts.get)  # type: ignore
         min_active = min(counts, key=counts.get)  # type: ignore
         if counts[max_active] - counts[min_active] > 5:
@@ -187,13 +187,13 @@ class ActiveBalanceChecker(VbmapChecker):
 class ReplicaBalanceChecker(VbmapChecker):
 
     def check(self,
-              chains: List[List[int]],
+              chains: List[List[NodeId]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         counts: Dict[NodeId, int] = {}
-        for c in chains:
-            for r in c[1:]:
-                increment(counts, r, 1)
+        for chain in chains:
+            for replica_node in chain[1:]:
+                increment(counts, replica_node, 1)
         max_replicas: Dict[TagSize, int] = {}
         min_replicas: Dict[TagSize, int] = {}
         tag_sizes: Dict[TagId, TagSize] = make_tag_size_map(node_tag_map)
@@ -227,7 +227,7 @@ class ReplicaBalanceChecker(VbmapChecker):
 class ActiveChecker(VbmapChecker):
 
     def check(self,
-              chains: List[List[int]],
+              chains: List[List[NodeId]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         nodes = {n: True for n in node_tag_map}
@@ -236,8 +236,8 @@ class ActiveChecker(VbmapChecker):
                                  node_tag_map,
                                  num_replicas)
         vbucket = 0
-        for c in chains:
-            if c[0] not in nodes:
+        for chain in chains:
+            if chain[0] not in nodes:
                 raise VbmapException(f'active vbucket has invalid node',
                                      node_tag_map,
                                      num_replicas,
@@ -248,20 +248,21 @@ class ActiveChecker(VbmapChecker):
 class ReplicaChecker(VbmapChecker):
 
     def check(self,
-              chains: List[List[int]],
+              chains: List[List[NodeId]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         nodes = {n: True for n in node_tag_map}
         vbucket = 0
         replicas = 0
-        for c in chains:
-            for r in c[1:]:
-                if r not in nodes:
+        chain: List[NodeId]
+        for chain in chains:
+            for replica_node in chain[1:]:
+                if replica_node not in nodes:
                     raise VbmapException(f'replica vbucket has invalid node',
                                          node_tag_map,
                                          num_replicas,
                                          f'vbucket: {vbucket}, '
-                                         f'chain: {c}')
+                                         f'chain: {chain}')
                 replicas += 1
             vbucket += 1
         if replicas != 1024 * num_replicas:
