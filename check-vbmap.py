@@ -326,14 +326,24 @@ def main(args):
         print(ex)
 
 
+DEFAULT_SERVER_GROUP_COUNT = 2
+DEFAULT_MAX_GROUP_SIZE = 5
+DEFAULT_MIN_GROUP_SIZE = 1
+
 parser = argparse.ArgumentParser(description='Check vbmap')
 parser.add_argument('vbmap_path', help='path to vbmap executable')
-parser.add_argument('--server-groups', dest='server_group_count', type=int, default=2,
-                    help='number of server groups')
-parser.add_argument('--max-group-size', dest='max_group_size', type=int, default=5,
-                    help='max server group size')
-parser.add_argument('--min-group-size', dest='min_group_size', type=int, default=1,
-                    help='min server group size')
+parser.add_argument('--server-groups', dest='server_group_count', type=int,
+                    default=DEFAULT_SERVER_GROUP_COUNT,
+                    help='number of server groups (default {}).'.format(
+                        DEFAULT_SERVER_GROUP_COUNT))
+parser.add_argument('--max-group-size', dest='max_group_size', type=int,
+                    default=DEFAULT_MAX_GROUP_SIZE,
+                    help='max server group size (default {})'.format(
+                        DEFAULT_MAX_GROUP_SIZE))
+parser.add_argument('--min-group-size', dest='min_group_size', type=int,
+                    default=DEFAULT_MIN_GROUP_SIZE,
+                    help='min server group size (default {})'.format(
+                        DEFAULT_MIN_GROUP_SIZE))
 parser.add_argument('--verbose', dest='verbose', default=False, action='store_true',
                     help='emit verbose log information')
 
