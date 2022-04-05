@@ -172,8 +172,8 @@ class ActiveBalanceChecker(VbmapChecker):
         counts: Dict[int, int] = {}
         for c in chains:
             increment(counts, c[0], 1)
-        max_active = max(counts, key=counts.get)
-        min_active = min(counts, key=counts.get)
+        max_active = max(counts, key=counts.get)  # type: ignore
+        min_active = min(counts, key=counts.get)  # type: ignore
         if counts[max_active] - counts[min_active] > 5:
             raise VbmapException(f'not active balanced: '
                                  f'max: {max_active}, '
@@ -279,7 +279,7 @@ class ReplicaChecker(VbmapChecker):
 def print_checker_result(
         server_groups: List[int],
         num_replicas: int,
-        vbmap_exception: VbmapException,
+        vbmap_exception: Optional[VbmapException],
         checker: Optional[VbmapChecker],
         verbose: bool):
     if verbose:
