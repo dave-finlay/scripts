@@ -7,6 +7,7 @@ from typing import Dict, List, Any, Optional
 
 TagId = int
 NodeId = int
+TagSize = int
 
 
 def format_tags(node_tag_map: Dict[NodeId, TagId]):
@@ -33,7 +34,7 @@ class VbmapException(Exception):
         return sorted({t: None for t in self.node_tag_map.values()})
 
     def get_node_tag_list(self) -> List[int]:
-        return [self.node_tag_map.get(x) for x in sorted(self.node_tag_map)]
+        return [self.node_tag_map[x] for x in sorted(self.node_tag_map)]
 
     def num_nodes(self) -> int:
         return len({x: None for x in self.node_tag_map})
@@ -79,6 +80,14 @@ def create_node_tag_map(server_group_sizes: List[int]) -> Dict[NodeId, TagId]:
 
 def create_balanced_node_tag_map(server_group_count, server_group_size) -> Dict[NodeId, TagId]:
     return create_node_tag_map([server_group_size for _ in range(server_group_count)])
+
+
+def make_tag_size_map(node_tag_map: Dict[NodeId, TagId]) -> Dict[TagId, TagSize]:
+    result: Dict[TagId, TagSize] = {}
+    tag: TagId
+    for tag in node_tag_map.values():
+        increment(result, tag, 1)
+    return result
 
 
 def get_server_group_size_permutations(
@@ -184,30 +193,39 @@ class ReplicaBalanceChecker(VbmapChecker):
         for c in chains:
             for r in c[1:]:
                 increment(counts, r, 1)
-        max_replica: Dict[TagId, int] = {}
-        min_replica: Dict[TagId, int] = {}
+        max_replicas: Dict[TagSize, int] = {}
+        min_replicas: Dict[TagSize, int] = {}
+        tag_sizes: Dict[TagId, TagSize] = make_tag_size_map(node_tag_map)
         node: NodeId
+        size: TagSize
         for node in counts:
-            tag: TagId = node_tag_map[node]
-            current = max_replica.get(tag)
+            size = tag_sizes[node_tag_map[node]]
+            current = max_replicas.get(size)
             if current:
-                max_replica[tag] = max(counts[node], current)
+                max_replicas[size] = max(counts[node], current)
             else:
-                max_replica[tag] = counts[node]
-            current = min_replica.get(tag)
+                max_replicas[size] = counts[node]
+            current = min_replicas.get(size)
             if current:
-                min_replica[tag] = min(counts[node], current)
+                min_replicas[size] = min(counts[node], current)
             else:
-                min_replica[tag] = counts[node]
-        tag: TagId
-        for tag in max_replica:
-            if max_replica[tag] - min_replica[tag] > 5:
+                min_replicas[size] = counts[node]
+        for size in max_replicas:
+            max_count = max_replicas[size]
+            min_count = min_replicas[size]
+            if max_count - min_count > 5:
+                groups: List[TagId] = [t for t in tag_sizes if tag_sizes[t] == size]
+                max_node: NodeId = [n for n in counts if counts[n] == max_count][0]
+                min_node: NodeId = [n for n in counts if counts[n] == min_count][0]
                 raise VbmapException('not replica balanced',
                                      node_tag_map,
                                      num_replicas,
-                                     f'group: {tag}, '
-                                     f'max: {max_replica[tag]}, '
-                                     f'min: {min_replica[tag]}, '
+                                     f'group size: {size}, '
+                                     f'groups: {sorted(groups)}, '
+                                     f'max: {max_count}, '
+                                     f'max_node: {max_node}, '
+                                     f'min: {min_count}, '
+                                     f'min_node: {min_node}, '
                                      f'counts: {[counts[x] for x in sorted(counts)]}')
 
 
