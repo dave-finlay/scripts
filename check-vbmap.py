@@ -5,8 +5,11 @@ import subprocess
 import argparse
 from typing import Dict, List, Any, Optional
 
+TagId = int
+NodeId = int
 
-def format_tags(node_tag_map):
+
+def format_tags(node_tag_map: Dict[NodeId, TagId]):
     result = ''
     for n in node_tag_map.keys():
         if result:
@@ -18,7 +21,7 @@ def format_tags(node_tag_map):
 class VbmapException(Exception):
     def __init__(self,
                  message: str,
-                 node_tag_map: Dict[int, int],
+                 node_tag_map: Dict[NodeId, TagId],
                  num_replicas: int,
                  description: str = ''):
         self.node_tag_map = node_tag_map
@@ -44,7 +47,7 @@ class VbmapException(Exception):
                f'{self.description}'
 
 
-def run_vbmap(vbmap_path: str, node_tag_map: Dict[int, int], num_replicas: int) -> Any:
+def run_vbmap(vbmap_path: str, node_tag_map: Dict[NodeId, TagId], num_replicas: int) -> Any:
     result = subprocess.run([vbmap_path,
                              '--num-nodes', str(len(node_tag_map)),
                              '--num-replicas', str(num_replicas),
@@ -62,7 +65,7 @@ def run_vbmap(vbmap_path: str, node_tag_map: Dict[int, int], num_replicas: int) 
         return json.loads(result.stdout)
 
 
-def create_node_tag_map(server_group_sizes: List[int]) -> Dict[int, int]:
+def create_node_tag_map(server_group_sizes: List[int]) -> Dict[NodeId, TagId]:
     result = {}
     server_group_id = 0
     node_id = 0
@@ -74,7 +77,7 @@ def create_node_tag_map(server_group_sizes: List[int]) -> Dict[int, int]:
     return result
 
 
-def create_balanced_node_tag_map(server_group_count, server_group_size) -> Dict[int, int]:
+def create_balanced_node_tag_map(server_group_count, server_group_size) -> Dict[NodeId, TagId]:
     return create_node_tag_map([server_group_size for _ in range(server_group_count)])
 
 
@@ -117,7 +120,7 @@ class VbmapChecker:
 
     def check(self,
               chains: List[List[int]],
-              node_tag_map: Dict[int, int],
+              node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         pass
 
@@ -126,7 +129,7 @@ class RackZoneChecker(VbmapChecker):
 
     def check(self,
               chains: List[List[int]],
-              node_tag_map: Dict[int, int],
+              node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         tags = {t: None for t in node_tag_map.values()}
         for c in chains:
@@ -155,7 +158,7 @@ class ActiveBalanceChecker(VbmapChecker):
 
     def check(self,
               chains: List[List[int]],
-              node_tag_map: Dict[int, int],
+              node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         counts: Dict[int, int] = {}
         for c in chains:
@@ -175,7 +178,7 @@ class ReplicaBalanceChecker(VbmapChecker):
 
     def check(self,
               chains: List[List[int]],
-              node_tag_map: Dict[int, int],
+              node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         counts: Dict[int, int] = {}
         for c in chains:
@@ -210,7 +213,7 @@ class ActiveChecker(VbmapChecker):
 
     def check(self,
               chains: List[List[int]],
-              node_tag_map: Dict[int, int],
+              node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         nodes = {n: True for n in node_tag_map}
         if len(chains) != 1024:
@@ -231,7 +234,7 @@ class ReplicaChecker(VbmapChecker):
 
     def check(self,
               chains: List[List[int]],
-              node_tag_map: Dict[int, int],
+              node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
         nodes = {n: True for n in node_tag_map}
         vbucket = 0
