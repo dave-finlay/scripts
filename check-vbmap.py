@@ -180,14 +180,15 @@ class ReplicaBalanceChecker(VbmapChecker):
               chains: List[List[int]],
               node_tag_map: Dict[NodeId, TagId],
               num_replicas: int) -> None:
-        counts: Dict[int, int] = {}
+        counts: Dict[NodeId, int] = {}
         for c in chains:
             for r in c[1:]:
                 increment(counts, r, 1)
-        max_replica: Dict[int, int] = {}
-        min_replica: Dict[int, int] = {}
+        max_replica: Dict[TagId, int] = {}
+        min_replica: Dict[TagId, int] = {}
+        node: NodeId
         for node in counts:
-            tag = node_tag_map[node]
+            tag: TagId = node_tag_map[node]
             current = max_replica.get(tag)
             if current:
                 max_replica[tag] = max(counts[node], current)
@@ -198,14 +199,15 @@ class ReplicaBalanceChecker(VbmapChecker):
                 min_replica[tag] = min(counts[node], current)
             else:
                 min_replica[tag] = counts[node]
-        for k in max_replica:
-            if max_replica[k] - min_replica[k] > 5:
+        tag: TagId
+        for tag in max_replica:
+            if max_replica[tag] - min_replica[tag] > 5:
                 raise VbmapException('not replica balanced',
                                      node_tag_map,
                                      num_replicas,
-                                     f'group: {k}, '
-                                     f'max: {max_replica[k]}, '
-                                     f'min: {min_replica[k]}, '
+                                     f'group: {tag}, '
+                                     f'max: {max_replica[tag]}, '
+                                     f'min: {min_replica[tag]}, '
                                      f'counts: {[counts[x] for x in sorted(counts)]}')
 
 
