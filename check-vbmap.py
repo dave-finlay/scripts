@@ -202,9 +202,9 @@ class ReplicaBalanceChecker(VbmapChecker):
         for node in counts:
             size = tag_sizes[node_tag_map[node]]
             fold(max_replicas, size,
-                 lambda x: max(counts[node], x) if x else counts[node])
+                 lambda x: max(counts[node], x) if x is not None else counts[node])
             fold(min_replicas, size,
-                 lambda x: min(counts[node], x) if x else counts[node])
+                 lambda x: min(counts[node], x) if x is not None else counts[node])
         for size in max_replicas:
             max_count = max_replicas[size]
             min_count = min_replicas[size]
